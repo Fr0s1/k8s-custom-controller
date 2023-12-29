@@ -32,6 +32,9 @@ spec:
                 type: string
             type: object
           status:
+            properties:
+              processStatus:
+                type: string
             type: object
         type: object
     served: true

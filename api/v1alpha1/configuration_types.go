@@ -42,10 +42,19 @@ const (
 	NetworkType ConfigurationType = "network"
 )
 
+type ConfigStatus string
+
+const (
+	FailedStatus  ConfigStatus = "Failed"
+	SuccessStatus ConfigStatus = "Success"
+	PendingStatus ConfigStatus = "Pending"
+)
+
 // ConfigurationStatus defines the observed state of Configuration
 type ConfigurationStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Process ConfigStatus `json:"processStatus,omitempty"`
 }
 
 //+kubebuilder:object:root=true

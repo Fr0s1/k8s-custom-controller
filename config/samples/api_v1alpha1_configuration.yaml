@@ -9,4 +9,5 @@ metadata:
     app.kubernetes.io/created-by: tutorial
   name: configuration-sample
 spec:
-  type: "Null"
+  type: "os"
+  setting: "test"
