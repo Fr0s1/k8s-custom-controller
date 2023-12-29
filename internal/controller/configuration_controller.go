@@ -85,7 +85,20 @@ func (r *ConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		l.Info("Reconciling result: Pod already created", "Configuration", config.Name, "Pod", pod.Name)
 
 		if pod.Status.Phase == corev1.PodSucceeded {
-			config.Status.Process = apiv1alpha1.SuccessStatus
+
+			commands := pod.Spec.InitContainers[0].Command
+			fmt.Println(commands)
+			containerCommand := pod.Spec.InitContainers[0].Command[2]
+			currentCommand := fmt.Sprintf("echo %s %s > /data/config.cnf", config.Spec.Type, config.Spec.Setting)
+
+			// If the new configuration is created, delete the old pod and create a new pod
+			if currentCommand != containerCommand {
+				l.Info("Reconciling result: Configuration change", "New Type", config.Spec.Type, "New Setting", config.Spec.Setting)
+				err = r.Delete(ctx, &pod)
+				config.Status.Process = apiv1alpha1.PendingStatus
+			} else {
+				config.Status.Process = apiv1alpha1.SuccessStatus
+			}
 		}
 
 		if pod.Status.Phase == corev1.PodFailed {

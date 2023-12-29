@@ -10,4 +10,4 @@ metadata:
   name: configuration-sample
 spec:
   type: "os"
-  setting: "test"
+  setting: "new setting 3"
