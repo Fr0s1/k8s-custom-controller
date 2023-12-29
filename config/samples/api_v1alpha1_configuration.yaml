@@ -1,0 +1,12 @@
+apiVersion: api.k8s.cloudfrosted.com/v1alpha1
+kind: Configuration
+metadata:
+  labels:
+    app.kubernetes.io/name: configuration
+    app.kubernetes.io/instance: configuration-sample
+    app.kubernetes.io/part-of: tutorial
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: tutorial
+  name: configuration-sample
+spec:
+  type: "Null"
