@@ -25,9 +25,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	apiv1alpha1 "github.com/Fr0s1/k8s-controller-tutorial/api/v1alpha1"
+	"github.com/go-logr/logr"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -67,6 +69,38 @@ func (r *ConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	finalizerName := "api.k8s.cloudfrosted.com/finalizer"
+
+	if config.ObjectMeta.DeletionTimestamp.IsZero() {
+		// The object is not being deleted, so if it does not have our finalizer,
+		// then lets add the finalizer and update the object. This is equivalent
+		// registering our finalizer.
+		if !controllerutil.ContainsFinalizer(&config, finalizerName) {
+			controllerutil.AddFinalizer(&config, finalizerName)
+			if err := r.Update(ctx, &config); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+	} else {
+		// The object is being deleted
+		if controllerutil.ContainsFinalizer(&config, finalizerName) {
+			// our finalizer is present, so lets handle any external dependency
+			if err := r.deleteExternalResources(&config, &l); err != nil {
+				// if fail to delete the external dependency here, return with error
+				// so that it can be retried
+				return ctrl.Result{}, err
+			}
+
+			// remove our finalizer from the list and update it.
+			controllerutil.RemoveFinalizer(&config, finalizerName)
+			if err := r.Update(ctx, &config); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+
+		// Stop reconciliation as the item is being deleted
+		return ctrl.Result{}, nil
+	}
 	l.Info("Reconciling Configuration", "Name", config.Name, "Namespace", config.Namespace)
 
 	labelSelector := labels.SelectorFromSet(map[string]string{"managed-by": config.Name})
@@ -205,6 +239,19 @@ func (r *ConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	l.Info("Reconciled successfully", "Pod", configPod.Name, "Configuration", config.Name)
 	return ctrl.Result{}, nil
+}
+
+func (r *ConfigurationReconciler) deleteExternalResources(config *apiv1alpha1.Configuration, log *logr.Logger) error {
+	//
+	// delete any external resources associated with the cronJob
+	//
+	// Ensure that delete implementation is idempotent and safe to invoke
+	// multiple times for same object.
+	log.Info("Finalizer func starts running")
+	time.Sleep(time.Second * 5)
+	log.Info("Finalizer func finishes running")
+
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager

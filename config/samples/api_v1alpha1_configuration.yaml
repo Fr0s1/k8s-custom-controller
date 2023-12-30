@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/part-of: tutorial
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: tutorial
-  name: configuration-sample
+  name: configuration-sample-2
 spec:
-  type: "os"
-  setting: "new setting 3"
+  type: "network"
+  setting: "default setting"
