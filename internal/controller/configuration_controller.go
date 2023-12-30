@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -103,11 +102,13 @@ func (r *ConfigurationReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 	l.Info("Reconciling Configuration", "Name", config.Name, "Namespace", config.Namespace)
 
-	labelSelector := labels.SelectorFromSet(map[string]string{"managed-by": config.Name})
-	listOps := &client.ListOptions{LabelSelector: labelSelector}
+	// labelSelector := labels.SelectorFromSet(map[string]string{"managed-by": config.Name})
+	// listOps := &client.ListOptions{LabelSelector: labelSelector}
 
 	configPodList := &corev1.PodList{}
-	err := r.List(ctx, configPodList, listOps)
+	// err := r.List(ctx, configPodList, listOps)
+
+	err := r.List(ctx, configPodList, client.MatchingFields{jobOwnerKey: req.Name})
 
 	if err != nil {
 		return ctrl.Result{}, nil
@@ -254,8 +255,31 @@ func (r *ConfigurationReconciler) deleteExternalResources(config *apiv1alpha1.Co
 	return nil
 }
 
+var (
+	jobOwnerKey = ".metadata.controller"
+	apiGVStr    = apiv1alpha1.GroupVersion.String()
+)
+
 // SetupWithManager sets up the controller with the Manager
 func (r *ConfigurationReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if err := mgr.GetFieldIndexer().IndexField(context.TODO(), &corev1.Pod{}, jobOwnerKey, func(rawObj client.Object) []string {
+		pod := rawObj.(*corev1.Pod)
+
+		owner := metav1.GetControllerOf(pod)
+
+		if owner == nil {
+			return nil
+		}
+
+		if owner.APIVersion != apiGVStr || owner.Kind != "Configuration" {
+			return nil
+		}
+
+		return []string{owner.Name}
+	}); err != nil {
+		return err
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&apiv1alpha1.Configuration{}).
 		Owns(&corev1.Pod{}).

@@ -10,4 +10,4 @@ metadata:
   name: configuration-sample-2
 spec:
   type: "network"
-  setting: "default setting"
+  setting: "default setting 1"

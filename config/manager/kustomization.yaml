@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: frost2203/k8s-custom-controller
-  newTag: finalizer-v2
+  newTag: indexer-v1
